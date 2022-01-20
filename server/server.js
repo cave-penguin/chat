@@ -4,14 +4,22 @@ import cors from 'cors'
 import sockjs from 'sockjs'
 import { renderToStaticNodeStream } from 'react-dom/server'
 import React from 'react'
+import passport from 'passport'
+import jwt from 'jsonwebtoken'
 
 import cookieParser from 'cookie-parser'
+import User from './model/User.model'
+import mongooseServices from './services/mongoose'
+import passportJWT from './services/passport'
 import config from './config'
 import Html from '../client/html'
 
 require('colors')
 
 let Root
+
+mongooseServices.connect()
+
 try {
   // eslint-disable-next-line import/no-unresolved
   Root = require('../dist/assets/js/ssr/root.bundle').default
@@ -26,13 +34,30 @@ const server = express()
 
 const middleware = [
   cors(),
+  passport.initialize(),
   express.static(path.resolve(__dirname, '../dist/assets')),
   express.urlencoded({ limit: '50mb', extended: true, parameterLimit: 50000 }),
   express.json({ limit: '50mb', extended: true }),
   cookieParser()
 ]
 
+passport.use('jwt', passportJWT.jwt)
 middleware.forEach((it) => server.use(it))
+
+server.post('/api/v1/auth', async (req, res) => {
+  // eslint-disable-next-line no-console
+  console.log(req.body.email)
+  try {
+    const user = await User.findAndValidateUser(req.body)
+    const payload = { uid: user.id }
+    const token = jwt.sign(payload, config.secret, { expiresIn: '48h' })
+    res.json({ status: 'OK', token })
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.log(err)
+    res.json({ status: 'ERROR', err })
+  }
+})
 
 server.use('/api/', (req, res) => {
   res.status(404)
