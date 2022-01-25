@@ -6,13 +6,15 @@ import { renderToStaticNodeStream } from 'react-dom/server'
 import React from 'react'
 import passport from 'passport'
 import jwt from 'jsonwebtoken'
-
 import cookieParser from 'cookie-parser'
+
+import auth from './middleware/auth'
 import User from './model/User.model'
 import mongooseServices from './services/mongoose'
 import passportJWT from './services/passport'
 import config from './config'
 import Html from '../client/html'
+// import { log } from 'console'
 
 require('colors')
 
@@ -24,6 +26,7 @@ try {
   // eslint-disable-next-line import/no-unresolved
   Root = require('../dist/assets/js/ssr/root.bundle').default
 } catch {
+  // eslint-disable-next-line no-console
   console.log('SSR not found. Please run "yarn run build:ssr"'.red)
 }
 
@@ -44,6 +47,27 @@ const middleware = [
 passport.use('jwt', passportJWT.jwt)
 middleware.forEach((it) => server.use(it))
 
+server.get('/api/v1/user-info', auth(['admin']), (req, res) => {
+  res.json({ status: '123' })
+})
+
+server.get('/api/v1/auth', async (req, res) => {
+  try {
+    const jwtUser = jwt.verify(req.cookies.token, config.secret)
+    const user = await User.findById(jwtUser.uid)
+
+    const payload = { uid: user.id }
+    const token = jwt.sign(payload, config.secret, { expiresIn: '48h' })
+    delete user.password
+    res.cookie('token', token, { maxAge: 1000 * 60 * 60 * 48 })
+    res.json({ status: 'ok', token, user })
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.log(err)
+    res.json({ status: 'error', err })
+  }
+})
+
 server.post('/api/v1/auth', async (req, res) => {
   // eslint-disable-next-line no-console
   console.log(req.body.email)
@@ -51,7 +75,9 @@ server.post('/api/v1/auth', async (req, res) => {
     const user = await User.findAndValidateUser(req.body)
     const payload = { uid: user.id }
     const token = jwt.sign(payload, config.secret, { expiresIn: '48h' })
-    res.json({ status: 'OK', token })
+    delete user.password
+    res.cookie('token', token, { maxAge: 1000 * 60 * 60 * 48 })
+    res.json({ status: 'OK', user })
   } catch (err) {
     // eslint-disable-next-line no-console
     console.log(err)
@@ -103,4 +129,5 @@ if (config.isSocketsEnabled) {
   })
   echo.installHandlers(app, { prefix: '/ws' })
 }
+// eslint-disable-next-line no-console
 console.log(`Serving at http://localhost:${port}`)

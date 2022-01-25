@@ -9,6 +9,7 @@ import Home from '../components/home'
 import DummyView from '../components/dummy-view'
 import NotFound from '../components/404'
 import Main from '../components/main'
+import PrivateComponent from '../components/private-route'
 
 import Startup from './startup'
 
@@ -23,20 +24,17 @@ const OnlyAnonymousRoute = ({ component: Component, ...rest }) => {
 }
 
 const PrivateRoute = ({ component: Component, ...rest }) => {
-  const user = useSelector((state) => state.auth.user)
-  const token = useSelector((state) => state.token)
-
-  const func = (props) => {
-    if (!!user && !!user.name && !!token) return <Component {...props} />
-
-    return (
+  const auth = useSelector((s) => s.auth)
+  const func = (props) =>
+    !!auth.user && !!auth.token ? (
+      <Component {...props} />
+    ) : (
       <Redirect
         to={{
           pathname: '/login'
         }}
       />
     )
-  }
   return <Route {...rest} render={func} />
 }
 
@@ -49,9 +47,11 @@ const RootComponent = (props) => {
       <RouterSelector history={history} location={props.location} context={props.context}>
         <Startup>
           <Switch>
-            <Route exact path="/" component={Home} />
-            <Route exact path="/main" component={Main} />
-            <PrivateRoute exact path="/hidden-route" component={DummyView} />
+            <Route exact path="/login" component={() => <Home />} />
+
+            <Route exact path="/" component={() => <Home />} />
+            <Route exact path="/main" component={() => <Main />} />
+            <PrivateRoute exact path="/private" component={() => <PrivateComponent />} />
             <OnlyAnonymousRoute exact path="/anonymous-route" component={DummyView} />
 
             <Route component={NotFound} />
