@@ -1,5 +1,6 @@
 import React from 'react'
 import { useDispatch, useSelector } from 'react-redux'
+import { Link } from 'react-router-dom'
 import { updateLoginField, updatePasswordField, signIn } from '../redux/reducers/auth'
 
 const LoginForm = () => {
@@ -53,6 +54,9 @@ const LoginForm = () => {
               >
                 Sign In
               </button>
+            </div>
+            <div className="mt-3 text-blue">
+              or <Link to="./registration">Registration</Link>
             </div>
           </form>
         </div>

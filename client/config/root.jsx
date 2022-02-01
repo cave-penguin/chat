@@ -10,6 +10,7 @@ import DummyView from '../components/dummy-view'
 import NotFound from '../components/404'
 import Main from '../components/main'
 import PrivateComponent from '../components/private-route'
+import RegistrationForm from '../components/registration-form'
 
 import Startup from './startup'
 
@@ -48,7 +49,7 @@ const RootComponent = (props) => {
         <Startup>
           <Switch>
             <Route exact path="/login" component={() => <Home />} />
-
+            <Route exact path="/registration" component={() => <RegistrationForm />} />
             <Route exact path="/" component={() => <Home />} />
             <Route exact path="/main" component={() => <Main />} />
             <PrivateRoute exact path="/private" component={() => <PrivateComponent />} />
